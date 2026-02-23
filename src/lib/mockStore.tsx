@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { Cat, DailyPlan, FeedingEvent, FoodItem, PortionSlot } from '../types';
 import { getStockholmDate } from './time';
 import { latestEventForCat } from './timeline';
@@ -42,56 +42,62 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [plans, setPlans] = useState<DailyPlan[]>([]);
   const [events, setEvents] = useState<FeedingEvent[]>([]);
 
-  const chooseDefaultFood = (catId: string, foodId: string) => {
-    const food = foods.find((f) => f.id === foodId);
-    if (!food) return;
+  const chooseDefaultFood = useCallback(
+    (catId: string, foodId: string) => {
+      const food = foods.find((f) => f.id === foodId);
+      if (!food) return;
 
-    const todayId = `${catId}_${getStockholmDate()}`;
-    setPlans((prev) => {
-      const existing = prev.find((p) => p.id === todayId);
-      if (existing) {
-        return prev.map((p) =>
-          p.id === todayId ? { ...p, defaultFoodId: foodId, defaultFoodName: food.name, startedAt: p.startedAt ?? new Date().toISOString() } : p
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: todayId,
-          householdId: 'hh1',
-          catId,
-          stockholmDate: getStockholmDate(),
-          defaultFoodId: foodId,
-          defaultFoodName: food.name,
-          startedAt: new Date().toISOString(),
-          plannedSlots: {}
+      const todayId = `${catId}_${getStockholmDate()}`;
+      setPlans((prev) => {
+        const existing = prev.find((p) => p.id === todayId);
+        if (existing) {
+          return prev.map((p) =>
+            p.id === todayId ? { ...p, defaultFoodId: foodId, defaultFoodName: food.name, startedAt: p.startedAt ?? new Date().toISOString() } : p
+          );
         }
-      ];
-    });
-  };
+        return [
+          ...prev,
+          {
+            id: todayId,
+            householdId: 'hh1',
+            catId,
+            stockholmDate: getStockholmDate(),
+            defaultFoodId: foodId,
+            defaultFoodName: food.name,
+            startedAt: new Date().toISOString(),
+            plannedSlots: {}
+          }
+        ];
+      });
+    },
+    [foods]
+  );
 
-  const addEvent: Store['addEvent'] = (input) => {
-    const item = [...foods, ...snacks].find((f) => f.id === input.itemId);
-    if (!item) return;
-    const newEvent: FeedingEvent = {
-      id: crypto.randomUUID(),
-      householdId: 'hh1',
-      catId: input.catId,
-      eventType: input.eventType,
-      slot: input.slot,
-      itemId: input.itemId,
-      itemName: item.name,
-      amountChip: input.amountChip,
-      amountText: input.amountText,
-      note: input.note,
-      eventAt: input.eventAt,
-      createdAt: new Date().toISOString(),
-      createdBy: 'demo-user'
-    };
-    setEvents((prev) => [newEvent, ...prev]);
-  };
+  const addEvent: Store['addEvent'] = useCallback(
+    (input) => {
+      const item = [...foods, ...snacks].find((f) => f.id === input.itemId);
+      if (!item) return;
+      const newEvent: FeedingEvent = {
+        id: crypto.randomUUID(),
+        householdId: 'hh1',
+        catId: input.catId,
+        eventType: input.eventType,
+        slot: input.slot,
+        itemId: input.itemId,
+        itemName: item.name,
+        amountChip: input.amountChip,
+        amountText: input.amountText,
+        note: input.note,
+        eventAt: input.eventAt,
+        createdAt: new Date().toISOString(),
+        createdBy: 'demo-user'
+      };
+      setEvents((prev) => [newEvent, ...prev]);
+    },
+    [foods, snacks]
+  );
 
-  const updateLatestNote = (catId: string, note: string) => {
+  const updateLatestNote = useCallback((catId: string, note: string) => {
     setEvents((prev) => {
       const next = [...prev];
       const latest = latestEventForCat(next, catId);
@@ -101,7 +107,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       }
       return next;
     });
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -116,7 +122,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
       addEvent,
       updateLatestNote
     }),
-    [selectedCatId, foods, snacks, events, plans]
+    [selectedCatId, foods, snacks, events, plans, chooseDefaultFood, addEvent, updateLatestNote]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

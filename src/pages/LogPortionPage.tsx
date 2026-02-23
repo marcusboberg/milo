@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { PortionSlot } from '../types';
 import { useStore } from '../lib/mockStore';
-import { getStockholmDate } from '../lib/time';
+import { formatLocalDateTimeInput, getStockholmDate, toIsoFromDateTimeLocal } from '../lib/time';
 
 const chips: Array<'1/4' | '1/3' | '1/2' | '1/1'> = ['1/4', '1/3', '1/2', '1/1'];
 
@@ -18,7 +18,7 @@ export const LogPortionPage = () => {
   const [slot, setSlot] = useState<PortionSlot>(isPortionSlot(initialSlot) ? initialSlot : 'portion1');
   const [amountChip, setAmountChip] = useState<'1/4' | '1/3' | '1/2' | '1/1'>('1/1');
   const [amountText, setAmountText] = useState('');
-  const [eventAt, setEventAt] = useState(new Date().toISOString().slice(0, 16));
+  const [eventAt, setEventAt] = useState(() => formatLocalDateTimeInput());
 
   const todayPlan = plans.find((p) => p.catId === selectedCatId && p.stockholmDate === getStockholmDate());
   const [foodId, setFoodId] = useState(todayPlan?.defaultFoodId ?? foods[0]?.id ?? '');
@@ -69,7 +69,7 @@ export const LogPortionPage = () => {
             itemId: selectedFood?.id ?? foods[0].id,
             amountChip,
             amountText,
-            eventAt: new Date(eventAt).toISOString()
+            eventAt: toIsoFromDateTimeLocal(eventAt)
           });
           navigate('/');
         }}

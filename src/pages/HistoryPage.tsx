@@ -1,13 +1,31 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useStore } from '../lib/mockStore';
-import { formatStockholmDateTime, getStockholmDate } from '../lib/time';
+import { formatStockholmDateTime, getRelativeStockholmDate, getStockholmDate } from '../lib/time';
 import { sortEventsByTimestampDesc } from '../lib/timeline';
 
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+
+const resolveDayParam = (value: string | null): string => {
+  if (value === 'yesterday') {
+    return getRelativeStockholmDate(-1);
+  }
+  if (value === 'today' || value == null) {
+    return getStockholmDate();
+  }
+  return datePattern.test(value) ? value : getStockholmDate();
+};
+
 export const HistoryPage = () => {
+  const [searchParams] = useSearchParams();
   const { events, selectedCatId } = useStore();
-  const [day, setDay] = useState(getStockholmDate());
+  const [day, setDay] = useState(() => resolveDayParam(searchParams.get('day')));
   const [showPortions, setShowPortions] = useState(true);
   const [showSnacks, setShowSnacks] = useState(true);
+
+  useEffect(() => {
+    setDay(resolveDayParam(searchParams.get('day')));
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     const merged = events.filter((event) => {

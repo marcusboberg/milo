@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useStore } from '../lib/mockStore';
 import { buildTodayCta, shouldShowYesterdayModal } from '../lib/todayStateMachine';
-import { formatSince, formatStockholmDateTime, getStockholmDate } from '../lib/time';
+import { formatSince, formatStockholmDateTime, getRelativeStockholmDate, getStockholmDate } from '../lib/time';
 import { sortEventsByTimestampDesc } from '../lib/timeline';
 
 export const TodayPage = () => {
@@ -11,23 +11,37 @@ export const TodayPage = () => {
   const [noteDraft, setNoteDraft] = useState('');
 
   const todayDate = getStockholmDate();
+  const yesterdayDate = getRelativeStockholmDate(-1);
   const todayPlan = plans.find((p) => p.catId === selectedCatId && p.stockholmDate === todayDate);
+  const yesterdayPlan = plans.find((p) => p.catId === selectedCatId && p.stockholmDate === yesterdayDate);
   const catEvents = useMemo(() => sortEventsByTimestampDesc(events.filter((e) => e.catId === selectedCatId)), [events, selectedCatId]);
   const todayEvents = catEvents.filter((e) => getStockholmDate(new Date(e.eventAt)) === todayDate);
+  const yesterdayEvents = catEvents.filter((e) => getStockholmDate(new Date(e.eventAt)) === yesterdayDate);
   const plannedComplete = todayEvents.some((event) => event.slot === 'portion3');
 
   const cta = buildTodayCta(todayPlan, todayEvents);
   const latest = catEvents[0];
   const recentTimeline = catEvents.slice(0, 8);
 
-  const yesterdayModal = useMemo(
-    () =>
-      shouldShowYesterdayModal({
-        yesterdayMissing: true,
-        todayStarted: Boolean(todayPlan?.startedAt)
-      }),
-    [todayPlan?.startedAt]
-  );
+  const yesterdayHasData = Boolean(yesterdayPlan) || yesterdayEvents.some((event) => event.eventType === 'portion');
+  const yesterdayHasPortion1 = yesterdayEvents.some((event) => event.slot === 'portion1');
+  const yesterdayHasPortion2 = yesterdayEvents.some((event) => event.slot === 'portion2');
+  const yesterdayHasPortion3 = yesterdayEvents.some((event) => event.slot === 'portion3');
+  const yesterdayMissing = yesterdayHasData && (!yesterdayHasPortion1 || !yesterdayHasPortion2 || !yesterdayHasPortion3);
+
+  const yesterdayModal = shouldShowYesterdayModal({
+    yesterdayMissing,
+    todayStarted: Boolean(todayPlan?.startedAt)
+  });
+
+  const ctaTarget =
+    cta.kind === 'chooseFood'
+      ? '/choose-food'
+      : cta.kind === 'logPortion2'
+        ? '/log-portion?slot=portion2'
+        : cta.kind === 'logPortion3'
+          ? '/log-portion?slot=portion3'
+          : null;
 
   return (
     <section>
@@ -89,7 +103,7 @@ export const TodayPage = () => {
 
       <div style={{ marginTop: 12 }}>
         {cta.kind !== 'none' && (
-          <button style={{ width: '100%', padding: 14, background: '#22c55e', color: '#fff', borderRadius: 12, border: 'none', fontWeight: 700 }} onClick={() => navigate(cta.kind === 'chooseFood' ? '/choose-food' : '/log-portion')}>
+          <button style={{ width: '100%', padding: 14, background: '#22c55e', color: '#fff', borderRadius: 12, border: 'none', fontWeight: 700 }} onClick={() => ctaTarget && navigate(ctaTarget)}>
             {cta.label}
           </button>
         )}

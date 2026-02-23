@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../lib/mockStore';
+import { formatLocalDateTimeInput, toIsoFromDateTimeLocal } from '../lib/time';
 
 export const LogSnackPage = () => {
   const navigate = useNavigate();
   const { snacks, selectedCatId, addEvent } = useStore();
   const [itemId, setItemId] = useState(snacks[0]?.id ?? '');
   const [note, setNote] = useState('');
-  const [eventAt, setEventAt] = useState(new Date().toISOString().slice(0, 16));
+  const [eventAt, setEventAt] = useState(() => formatLocalDateTimeInput());
 
   return (
     <section>
@@ -34,7 +35,7 @@ export const LogSnackPage = () => {
             catId: selectedCatId,
             eventType: 'snack',
             itemId,
-            eventAt: new Date(eventAt).toISOString(),
+            eventAt: toIsoFromDateTimeLocal(eventAt),
             note
           });
           navigate('/');

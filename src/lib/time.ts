@@ -1,5 +1,7 @@
 const STOCKHOLM_TZ = 'Europe/Stockholm';
 
+const pad2 = (value: number): string => value.toString().padStart(2, '0');
+
 export const getStockholmDate = (date = new Date()): string => {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: STOCKHOLM_TZ,
@@ -21,6 +23,29 @@ export const getStockholmHour = (date = new Date()): number => {
     hourCycle: 'h23'
   }).format(date);
   return Number(hour);
+};
+
+export const getRelativeStockholmDate = (dayOffset: number, date = new Date()): string => {
+  const shifted = new Date(date);
+  shifted.setDate(shifted.getDate() + dayOffset);
+  return getStockholmDate(shifted);
+};
+
+export const formatLocalDateTimeInput = (date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = pad2(date.getMonth() + 1);
+  const day = pad2(date.getDate());
+  const hour = pad2(date.getHours());
+  const minute = pad2(date.getMinutes());
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+};
+
+export const toIsoFromDateTimeLocal = (value: string): string => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString();
+  }
+  return parsed.toISOString();
 };
 
 export const formatSince = (fromISO: string, now = new Date()): string => {

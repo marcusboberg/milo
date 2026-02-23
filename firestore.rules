@@ -5,17 +5,35 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function householdPath(householdId) {
+      return /databases/$(database)/documents/households/$(householdId);
+    }
+
+    function householdExists(householdId) {
+      return exists(householdPath(householdId));
+    }
+
+    function isHouseholdCreator(householdId) {
+      return isSignedIn() &&
+        householdExists(householdId) &&
+        get(householdPath(householdId)).data.createdBy == request.auth.uid;
+    }
+
     function isMember(householdId) {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/households/$(householdId)/members/$(request.auth.uid));
     }
 
     match /households/{householdId} {
-      allow read, write: if isMember(householdId);
+      allow create: if isSignedIn() &&
+        request.resource.data.createdBy == request.auth.uid;
+      allow read, update, delete: if isMember(householdId);
 
       match /members/{uid} {
         allow read: if isMember(householdId);
-        allow create: if isSignedIn() && request.auth.uid == uid;
+        allow create: if isSignedIn() &&
+          request.auth.uid == uid &&
+          (isMember(householdId) || isHouseholdCreator(householdId));
         allow update, delete: if isMember(householdId) && request.auth.uid == uid;
       }
 
