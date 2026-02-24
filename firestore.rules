@@ -17,14 +17,8 @@ service cloud.firestore {
       return isSignedIn() && householdId == 'hh_' + request.auth.uid;
     }
 
-    function isHouseholdCreator(householdId) {
-      return isSignedIn() &&
-        householdExists(householdId) &&
-        get(householdPath(householdId)).data.createdBy == request.auth.uid;
-    }
-
-    function isHouseholdMemberOrOwner(householdId) {
-      return isMember(householdId) || isHouseholdOwner(householdId) || isHouseholdCreator(householdId);
+    function isHouseholdMember(householdId) {
+      return isSignedIn() && (isHouseholdOwner(householdId) || isMember(householdId));
     }
 
     function isMember(householdId) {
@@ -35,30 +29,31 @@ service cloud.firestore {
     match /households/{householdId} {
       allow create: if isHouseholdOwner(householdId) &&
         request.resource.data.createdBy == request.auth.uid;
-      allow read, update, delete: if isHouseholdMemberOrOwner(householdId);
+      allow read, update, delete: if isHouseholdMember(householdId);
 
       match /members/{uid} {
-        allow read: if isMember(householdId);
-        allow create: if isSignedIn() &&
-          request.auth.uid == uid &&
-          (isMember(householdId) || isHouseholdCreator(householdId));
+        allow read: if isHouseholdMember(householdId);
+        allow create: if isHouseholdOwner(householdId) ||
+          (isSignedIn() &&
+            request.auth.uid == uid &&
+            isMember(householdId));
         allow update, delete: if isMember(householdId) && request.auth.uid == uid;
       }
 
       match /cats/{catId} {
-        allow read, write: if isHouseholdMemberOrOwner(householdId);
+        allow read, write: if isHouseholdMember(householdId);
       }
 
       match /catalog/{itemId} {
-        allow read, write: if isHouseholdMemberOrOwner(householdId);
+        allow read, write: if isHouseholdMember(householdId);
       }
 
       match /dailyPlans/{dailyPlanId} {
-        allow read, write: if isHouseholdMemberOrOwner(householdId);
+        allow read, write: if isHouseholdMember(householdId);
       }
 
       match /events/{eventId} {
-        allow read, write: if isHouseholdMemberOrOwner(householdId);
+        allow read, write: if isHouseholdMember(householdId);
       }
     }
   }
