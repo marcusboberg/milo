@@ -137,7 +137,7 @@ VITE_FIREBASE_APP_ID=...
 ### Firebase setup
 
 1. Create Firebase project.
-2. Enable **Authentication > Email link (passwordless)**.
+2. Enable **Authentication > Email/Password**.
 3. Create Firestore database.
 4. Deploy rules:
    ```bash
@@ -152,6 +152,11 @@ VITE_FIREBASE_APP_ID=...
   ```bash
   firebase deploy --only hosting
   ```
+
+### In-app login
+
+- Open app and create an account on `/login` using email + password.
+- Existing users can log in with the same form.
 
 ### Notes
 

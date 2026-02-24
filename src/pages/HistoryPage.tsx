@@ -40,31 +40,53 @@ export const HistoryPage = () => {
   }, [events, selectedCatId, day, showPortions, showSnacks]);
 
   return (
-    <section>
-      <h1>History timeline</h1>
-      <input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
-      <div style={{ display: 'flex', gap: 12, margin: '10px 0' }}>
-        <label>
-          <input type="checkbox" checked={showPortions} onChange={(e) => setShowPortions(e.target.checked)} /> Portions
-        </label>
-        <label>
-          <input type="checkbox" checked={showSnacks} onChange={(e) => setShowSnacks(e.target.checked)} /> Snacks
-        </label>
-      </div>
+    <section className="page">
+      <header className="page-header">
+        <h1 className="page-title">History timeline</h1>
+        <p className="page-subtitle">Filter events by day and type.</p>
+      </header>
 
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {filtered.map((event) => (
-          <li key={event.id} style={{ borderBottom: '1px solid #e5e7eb', padding: '10px 0' }}>
-            <strong>{event.eventType === 'portion' ? `Portion ${event.slot}` : 'Snack'}</strong>
-            <div>{event.itemName}</div>
-            <div>{event.amountChip ?? event.amountText ?? '-'}</div>
-            <div>{formatStockholmDateTime(event.eventAt)}</div>
-            {event.note && <div>Note: {event.note}</div>}
-            <button>Edit</button> <button>Delete</button>
-          </li>
-        ))}
-      </ul>
-      {filtered.length === 0 && <p style={{ color: '#6b7280' }}>No timeline events for the selected day/filter.</p>}
+      <section className="card form-card">
+        <label className="field">
+          <span className="field-label">Day</span>
+          <input className="input" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+        </label>
+
+        <div className="filter-row">
+          <label className="check-row">
+            <input type="checkbox" checked={showPortions} onChange={(e) => setShowPortions(e.target.checked)} />
+            <span>Portions</span>
+          </label>
+          <label className="check-row">
+            <input type="checkbox" checked={showSnacks} onChange={(e) => setShowSnacks(e.target.checked)} />
+            <span>Snacks</span>
+          </label>
+        </div>
+      </section>
+
+      <section className="card">
+        <h3 className="section-title">Events</h3>
+        <ul className="timeline-list">
+          {filtered.map((event) => (
+            <li key={event.id} className="timeline-item">
+              <p className="timeline-title">{event.eventType === 'portion' ? `Portion ${event.slot}` : 'Snack'}</p>
+              <p className="timeline-meta">{event.itemName}</p>
+              <p className="timeline-meta">{event.amountChip ?? event.amountText ?? '-'}</p>
+              <p className="timeline-meta">{formatStockholmDateTime(event.eventAt)}</p>
+              {event.note && <p className="timeline-meta">Note: {event.note}</p>}
+              <div className="button-row">
+                <button type="button" className="btn btn-ghost btn-sm">
+                  Edit
+                </button>
+                <button type="button" className="btn btn-danger btn-sm">
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {filtered.length === 0 && <p className="empty-state">No timeline events for the selected day/filter.</p>}
+      </section>
     </section>
   );
 };

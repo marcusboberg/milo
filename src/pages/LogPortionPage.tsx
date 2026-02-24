@@ -19,6 +19,8 @@ export const LogPortionPage = () => {
   const [amountChip, setAmountChip] = useState<'1/4' | '1/3' | '1/2' | '1/1'>('1/1');
   const [amountText, setAmountText] = useState('');
   const [eventAt, setEventAt] = useState(() => formatLocalDateTimeInput());
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const todayPlan = plans.find((p) => p.catId === selectedCatId && p.stockholmDate === getStockholmDate());
   const [foodId, setFoodId] = useState(todayPlan?.defaultFoodId ?? foods[0]?.id ?? '');
@@ -26,56 +28,99 @@ export const LogPortionPage = () => {
   const selectedFood = useMemo(() => foods.find((f) => f.id === foodId), [foods, foodId]);
 
   return (
-    <section>
-      <h1>Log Portion</h1>
+    <section className="page">
+      <header className="page-header">
+        <h1 className="page-title">Log Portion</h1>
+        <p className="page-subtitle">Capture exactly what Milo ate.</p>
+      </header>
 
-      <label>Portion slot</label>
-      <select value={slot} onChange={(e) => setSlot(e.target.value as PortionSlot)}>
-        <option value="portion1">Portion 1</option>
-        <option value="portion2">Portion 2</option>
-        <option value="portion3">Portion 3</option>
-        <option value="extra">Extra portion</option>
-      </select>
+      <article className="card form-card">
+        <label className="field">
+          <span className="field-label">Portion slot</span>
+          <select className="select" value={slot} onChange={(e) => setSlot(e.target.value as PortionSlot)}>
+            <option value="portion1">Portion 1</option>
+            <option value="portion2">Portion 2</option>
+            <option value="portion3">Portion 3</option>
+            <option value="extra">Extra portion</option>
+          </select>
+        </label>
 
-      <label>Food</label>
-      <select value={foodId} onChange={(e) => setFoodId(e.target.value)}>
-        {foods.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.name}
-          </option>
-        ))}
-      </select>
+        <label className="field">
+          <span className="field-label">Food</span>
+          <select className="select" value={foodId} onChange={(e) => setFoodId(e.target.value)}>
+            {foods.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <label>Amount</label>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {chips.map((chip) => (
-          <button key={chip} onClick={() => setAmountChip(chip)} style={{ background: chip === amountChip ? '#a7f3d0' : '#f4f4f5' }}>
-            {chip}
+        <label className="field">
+          <span className="field-label">Amount</span>
+          <div className="chip-row">
+            {chips.map((chip) => (
+              <button
+                type="button"
+                key={chip}
+                onClick={() => setAmountChip(chip)}
+                className={`btn btn-chip${chip === amountChip ? ' btn-chip-active' : ''}`}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <input className="input" value={amountText} onChange={(e) => setAmountText(e.target.value)} placeholder="30g, small, a bit more" />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Time</span>
+          <input className="input" type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />
+        </label>
+
+        <div className="button-row">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={saving || foods.length === 0}
+            onClick={() => {
+              setSaveError(null);
+              const fallbackFoodId = selectedFood?.id ?? foods[0]?.id;
+              if (!fallbackFoodId) {
+                setSaveError('Add food first, then try again.');
+                return;
+              }
+
+              void (async () => {
+                setSaving(true);
+                const result = await addEvent({
+                  catId: selectedCatId,
+                  eventType: 'portion',
+                  slot,
+                  itemId: fallbackFoodId,
+                  amountChip,
+                  amountText,
+                  eventAt: toIsoFromDateTimeLocal(eventAt)
+                });
+                setSaving(false);
+
+                if (!result.ok) {
+                  setSaveError(result.reason ?? 'Could not save portion.');
+                  return;
+                }
+
+                navigate('/');
+              })();
+            }}
+          >
+            {saving ? 'Saving...' : 'Save portion'}
           </button>
-        ))}
-      </div>
-      <input value={amountText} onChange={(e) => setAmountText(e.target.value)} placeholder="30g, small, a bit more" />
-
-      <label>Time</label>
-      <input type="datetime-local" value={eventAt} onChange={(e) => setEventAt(e.target.value)} />
-
-      <button
-        style={{ marginTop: 12 }}
-        onClick={() => {
-          addEvent({
-            catId: selectedCatId,
-            eventType: 'portion',
-            slot,
-            itemId: selectedFood?.id ?? foods[0].id,
-            amountChip,
-            amountText,
-            eventAt: toIsoFromDateTimeLocal(eventAt)
-          });
-          navigate('/');
-        }}
-      >
-        Save portion
-      </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => navigate(-1)}>
+            Cancel
+          </button>
+        </div>
+        {saveError ? <p className="error-text">{saveError}</p> : null}
+      </article>
     </section>
   );
 };

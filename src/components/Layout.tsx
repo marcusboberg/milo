@@ -1,4 +1,5 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../lib/useAuth';
 
 const tabs = [
   { to: '/', label: 'Today' },
@@ -7,16 +8,30 @@ const tabs = [
 ];
 
 export const Layout = () => {
-  const location = useLocation();
+  const { user, logOut } = useAuth();
 
   return (
-    <main style={{ margin: '0 auto', maxWidth: 480, padding: 16, fontFamily: 'system-ui' }}>
+    <main className="app-shell">
+      <header className="app-header">
+        <div>
+          <p className="brand-overline">Stockholm feeding log</p>
+          <p className="brand-name">Milo</p>
+        </div>
+        <div className="header-right">
+          <small className="user-pill">{user?.email ?? 'Signed in'}</small>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => void logOut()}>
+            Log out
+          </button>
+        </div>
+      </header>
+
       <Outlet />
-      <nav style={{ position: 'sticky', bottom: 0, marginTop: 20, background: '#fff', borderTop: '1px solid #ddd', padding: 12, display: 'flex', justifyContent: 'space-around' }}>
+
+      <nav className="app-nav">
         {tabs.map((tab) => (
-          <Link key={tab.to} to={tab.to} style={{ color: location.pathname === tab.to ? '#0f766e' : '#555', fontWeight: 600, textDecoration: 'none' }}>
+          <NavLink key={tab.to} to={tab.to} className={({ isActive }) => `app-nav-link${isActive ? ' app-nav-link-active' : ''}`}>
             {tab.label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
     </main>
