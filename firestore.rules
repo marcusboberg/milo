@@ -13,10 +13,18 @@ service cloud.firestore {
       return exists(householdPath(householdId));
     }
 
+    function isHouseholdOwner(householdId) {
+      return isSignedIn() && householdId == 'hh_' + request.auth.uid;
+    }
+
     function isHouseholdCreator(householdId) {
       return isSignedIn() &&
         householdExists(householdId) &&
         get(householdPath(householdId)).data.createdBy == request.auth.uid;
+    }
+
+    function isHouseholdMemberOrOwner(householdId) {
+      return isMember(householdId) || isHouseholdOwner(householdId) || isHouseholdCreator(householdId);
     }
 
     function isMember(householdId) {
@@ -25,9 +33,9 @@ service cloud.firestore {
     }
 
     match /households/{householdId} {
-      allow create: if isSignedIn() &&
+      allow create: if isHouseholdOwner(householdId) &&
         request.resource.data.createdBy == request.auth.uid;
-      allow read, update, delete: if isMember(householdId);
+      allow read, update, delete: if isHouseholdMemberOrOwner(householdId);
 
       match /members/{uid} {
         allow read: if isMember(householdId);
@@ -38,19 +46,19 @@ service cloud.firestore {
       }
 
       match /cats/{catId} {
-        allow read, write: if isMember(householdId);
+        allow read, write: if isHouseholdMemberOrOwner(householdId);
       }
 
       match /catalog/{itemId} {
-        allow read, write: if isMember(householdId);
+        allow read, write: if isHouseholdMemberOrOwner(householdId);
       }
 
       match /dailyPlans/{dailyPlanId} {
-        allow read, write: if isMember(householdId);
+        allow read, write: if isHouseholdMemberOrOwner(householdId);
       }
 
       match /events/{eventId} {
-        allow read, write: if isMember(householdId);
+        allow read, write: if isHouseholdMemberOrOwner(householdId);
       }
     }
   }
