@@ -39,6 +39,12 @@ const seededFoods: FoodItem[] = [
   { id: 'snack_treat', householdId: 'hh1', kind: 'snack', name: 'Dental treat', active: true, createdAt: now }
 ];
 const catalogStorageKey = 'milo.catalog.v1';
+
+const sharedHouseholdId = (() => {
+  const candidate = import.meta.env.VITE_HOUSEHOLD_ID;
+  const trimmed = typeof candidate === 'string' ? candidate.trim() : '';
+  return trimmed.length > 0 ? trimmed : 'hh_milo';
+})();
 const isEventType = (value: unknown): value is FeedingEvent['eventType'] => value === 'portion' || value === 'snack';
 const isPortionSlot = (value: unknown): value is PortionSlot => value === 'portion1' || value === 'portion2' || value === 'portion3' || value === 'extra';
 const isPlannedSlot = (value: unknown): value is keyof DailyPlan['plannedSlots'] => value === 'portion1' || value === 'portion2' || value === 'portion3';
@@ -165,7 +171,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
   const [catalog, setCatalog] = useState<FoodItem[]>(() => loadCatalog());
   const [plans, setPlans] = useState<DailyPlan[]>([]);
   const [events, setEvents] = useState<FeedingEvent[]>([]);
-  const householdId = useMemo(() => (user ? `hh_${user.uid}` : null), [user]);
+  const householdId = useMemo(() => (user ? sharedHouseholdId : null), [user]);
   const foods = useMemo(() => catalog.filter((item) => item.kind === 'food' && item.active), [catalog]);
   const snacks = useMemo(() => catalog.filter((item) => item.kind === 'snack' && item.active), [catalog]);
 

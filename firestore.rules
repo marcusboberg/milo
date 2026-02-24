@@ -5,55 +5,38 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function householdPath(householdId) {
-      return /databases/$(database)/documents/households/$(householdId);
-    }
-
-    function householdExists(householdId) {
-      return exists(householdPath(householdId));
-    }
-
-    function isHouseholdOwner(householdId) {
-      return isSignedIn() && householdId == 'hh_' + request.auth.uid;
-    }
-
-    function isHouseholdMember(householdId) {
-      return isSignedIn() && (isHouseholdOwner(householdId) || isMember(householdId));
-    }
-
-    function isMember(householdId) {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/households/$(householdId)/members/$(request.auth.uid));
+    function isSharedHousehold(householdId) {
+      return householdId == 'hh_milo';
     }
 
     match /households/{householdId} {
-      allow create: if isHouseholdOwner(householdId) &&
-        request.resource.data.createdBy == request.auth.uid;
-      allow read, update, delete: if isHouseholdMember(householdId);
+      allow create: if isSignedIn() && isSharedHousehold(householdId);
+      allow read, update, delete: if isSignedIn() && isSharedHousehold(householdId);
 
       match /members/{uid} {
-        allow read: if isHouseholdMember(householdId);
-        allow create: if isHouseholdOwner(householdId) ||
-          (isSignedIn() &&
-            request.auth.uid == uid &&
-            isMember(householdId));
-        allow update, delete: if isMember(householdId) && request.auth.uid == uid;
+        allow read: if isSignedIn() && isSharedHousehold(householdId);
+        allow create: if isSignedIn() &&
+          isSharedHousehold(householdId) &&
+          request.auth.uid == uid;
+        allow update, delete: if isSignedIn() &&
+          isSharedHousehold(householdId) &&
+          request.auth.uid == uid;
       }
 
       match /cats/{catId} {
-        allow read, write: if isHouseholdMember(householdId);
+        allow read, write: if isSignedIn() && isSharedHousehold(householdId);
       }
 
       match /catalog/{itemId} {
-        allow read, write: if isHouseholdMember(householdId);
+        allow read, write: if isSignedIn() && isSharedHousehold(householdId);
       }
 
       match /dailyPlans/{dailyPlanId} {
-        allow read, write: if isHouseholdMember(householdId);
+        allow read, write: if isSignedIn() && isSharedHousehold(householdId);
       }
 
       match /events/{eventId} {
-        allow read, write: if isHouseholdMember(householdId);
+        allow read, write: if isSignedIn() && isSharedHousehold(householdId);
       }
     }
   }
